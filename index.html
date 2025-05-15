@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Гра з Паролем – Інтерактивна</title>
+  <style>
+    :root {
+      --bg: #111;
+      --card: #1e1e1e;
+      --accent: #ffd100;
+      --good: #10c900;
+      --bad: #ff355e;
+      --text: #eee;
+    }
+    * {
+      box-sizing: border-box;
+      font-family: "Inter", sans-serif;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem 1rem;
+    }
+    .game {
+      background: var(--card);
+      width: 100%;
+      max-width: 500px;
+      padding: 2rem 1.5rem 3rem;
+      border-radius: 12px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+    }
+    h1 {
+      margin: 0 0 1rem;
+      text-align: center;
+      font-size: 1.8rem;
+      color: var(--accent);
+    }
+    p {
+      margin: 0 0 1rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #000;
+      color: var(--text);
+    }
+    ol {
+      list-style: none;
+      counter-reset: rule;
+      margin-top: 1.5rem;
+      padding-left: 0;
+    }
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.4rem 0;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      background: #000;
+      position: relative;
+    }
+    li::before {
+      counter-increment: rule;
+      content: counter(rule) ".";
+      color: var(--accent);
+      font-weight: 700;
+      width: 1.5rem;
+      flex: none;
+      text-align: right;
+    }
+    .passed {
+      background: rgba(16, 201, 0, 0.15);
+    }
+    .passed span {
+      color: var(--good);
+    }
+    .failed {
+      background: rgba(255, 53, 94, 0.18);
+    }
+    .failed span {
+      color: var(--bad);
+    }
+    .status {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="game">
+    <h1>Гра з Паролем</h1>
+    <p>Введіть пароль, який задовольняє <strong>усім правилам</strong> нижче. Перевірка відбувається у реальному часі.</p>
+    <input type="text" id="password" placeholder="Введіть пароль" autocomplete="off" />
+
+    <ol id="rules">
+      <li id="r1" class="failed"><span>Мінімум 5 символів</span></li>
+      <li id="r2" class="failed"><span>Містить щонайменше одну цифру</span></li>
+      <li id="r3" class="failed"><span>Містить велику літеру</span></li>
+      <li id="r4" class="failed"><span>Містить спеціальний символ (! @ # $ % ^ &amp; * )</span></li>
+      <li id="r5" class="failed"><span>Сума всіх цифр = 25</span></li>
+      <li id="r6" class="failed"><span>Містить назву місяця (англ.)</span></li>
+      <li id="r7" class="failed"><span>Містить римську цифру</span></li>
+      <li id="r8" class="failed"><span>Містить спонсора (Pepsi, Coke, Tesla)</span></li>
+      <li id="r9" class="failed"><span>Добуток римських цифр = 35</span></li>
+      <li id="r10" class="failed"><span>CAPTCHA (введіть "42")</span></li>
+    </ol>
+    <div class="status" id="status">❌ Правила не виконані</div>
+  </div>
+
+  <script>
+    const input = document.getElementById("password");
+    const statusEl = document.getElementById("status");
+
+    const monthRegex = /(january|february|march|april|may|june|july|august|september|october|november|december)/i;
+    const sponsorRegex = /(pepsi|coke|tesla)/i;
+    const romanMap = { I: 1, V: 5, VII:7, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+
+    function sumDigits(str) {
+      return [...str].filter((c) => /\d/.test(c)).map(Number).reduce((a, b) => a + b, 0);
+    }
+
+    function romanDigits(str) {
+      return [...str.toUpperCase()].filter((c) => romanMap[c]);
+    }
+
+    function productRomans(arr) {
+      return arr.reduce((prod, c) => prod * romanMap[c], 1);
+    }
+
+    const rules = {
+      r1: (v) => v.length >= 5,
+      r2: (v) => /\d/.test(v),
+      r3: (v) => /[A-ZА-ЯЇЄІ]/.test(v),
+      r4: (v) => /[!@#$%^&*]/.test(v),
+      r5: (v) => sumDigits(v) === 25,
+      r6: (v) => monthRegex.test(v),
+      r7: (v) => romanDigits(v).length > 0,
+      r8: (v) => sponsorRegex.test(v),
+      r9: (v) => v.toUpperCase().includes("XXXV"),
+      r10: (v) => /42/.test(v), // спрощена CAPTCHA
+    };
+
+    function validate() {
+      const val = input.value;
+      let all = true;
+      for (const id in rules) {
+        const li = document.getElementById(id);
+        const ok = rules[id](val);
+        li.className = ok ? "passed" : "failed";
+        all = all && ok;
+      }
+      statusEl.textContent = all ? "✅ Пароль прийнято!" : "❌ Правила не виконані";
+      statusEl.style.color = all ? "var(--good)" : "var(--bad)";
+    }
+
+    input.addEventListener("input", validate);
+  </script>
+</body>
+</html>
